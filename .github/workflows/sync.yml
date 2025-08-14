@@ -1,23 +1,42 @@
-name: Sync LunaTV Image
+name: Build & Push LunaTV Multi-Arch Image
 
 on:
-  workflow_dispatch: # 手动触发
+  workflow_dispatch:       # 手动触发
   schedule:
-    - cron: '0 0 * * *' # 每天 0 点兜底同步
-  repository_dispatch: # 接收上游触发事件
+    - cron: '0 0 * * *'    # 每天 0 点兜底同步
+  repository_dispatch:     # 接收上游触发事件
 
 jobs:
-  sync:
+  build-and-push:
     runs-on: ubuntu-latest
+
     steps:
-      - name: 登录 GHCR
+      # 1. 检出仓库（源码）
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2. 设置 QEMU 支持多架构
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      # 3. 设置 Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      # 4. 登录 GHCR
+      - name: Login to GHCR
         run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u colaxr --password-stdin
 
-      - name: 拉取上游镜像
+      # 5. 拉取上游镜像（amd64 原镜像）
+      - name: Pull upstream image
         run: docker pull ghcr.io/moontechlab/lunatv:latest
 
-      - name: 打 tag 成自己的仓库地址
-        run: docker tag ghcr.io/moontechlab/lunatv:latest ghcr.io/colaxr/lunatv:latest
-
-      - name: 推送到自己的 GHCR
-        run: docker push ghcr.io/colaxr/lunatv:latest
+      # 6. 构建多架构镜像并推送到自己的仓库
+      - name: Build and push multi-arch image
+        run: |
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            -t ghcr.io/colaxr/lunatv:latest \
+            --pull \
+            --build-arg BASE_IMAGE=ghcr.io/moontechlab/lunatv:latest \
+            --push .
