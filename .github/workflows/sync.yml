@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. 检出仓库（源码）
+      # 1. 检出仓库（Dockerfile）
       - name: Checkout repository
         uses: actions/checkout@v3
 
@@ -27,11 +27,7 @@ jobs:
       - name: Login to GHCR
         run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u colaxr --password-stdin
 
-      # 5. 拉取上游镜像（amd64 原镜像）
-      - name: Pull upstream image
-        run: docker pull ghcr.io/moontechlab/lunatv:latest
-
-      # 6. 构建多架构镜像并推送到自己的仓库
+      # 5. 构建多架构镜像并推送到自己的 GHCR
       - name: Build and push multi-arch image
         run: |
           docker buildx build \
