@@ -31,14 +31,14 @@ jobs:
       - name: Pull upstream image
         run: docker pull ghcr.io/moontechlab/lunatv:latest
 
-      # 6. 内联 Dockerfile 构建多架构镜像并推送
+      # 6. 创建临时 Dockerfile 并 buildx 构建多架构镜像
       - name: Build and push multi-arch image
         run: |
+          echo "FROM ghcr.io/moontechlab/lunatv:latest" > Dockerfile.temp
           docker buildx build \
             --platform linux/amd64,linux/arm64 \
             -t ghcr.io/colaxr/lunatv:latest \
             --pull \
             --push \
-            - <<EOF
-FROM ghcr.io/moontechlab/lunatv:latest
-EOF
+            -f Dockerfile.temp
+          rm Dockerfile.temp
